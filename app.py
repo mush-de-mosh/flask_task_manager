@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from config import config
 from models import db, User, Task
 import os
@@ -21,19 +21,7 @@ def create_app(config_name='default'):
     
     @app.route('/')
     def home():
-        """Home endpoint - API information"""
-        return jsonify({
-            'message': 'Welcome to Task Manager API',
-            'version': '1.0.0',
-            'endpoints': {
-                'users': '/users',
-                'users_detail': '/users/<id>',
-                'tasks': '/tasks',
-                'tasks_detail': '/tasks/<id>',
-                'user_tasks': '/users/<user_id>/tasks',
-                'health': '/health'
-            }
-        })
+        return render_template('index.html')
     
     @app.route('/health')
     def health():

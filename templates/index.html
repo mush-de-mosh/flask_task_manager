@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Task Manager</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; color: #333; }
+
+    header {
+      background: #4f46e5; color: white; padding: 16px 32px;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    header h1 { font-size: 1.4rem; }
+
+    .container { max-width: 1100px; margin: 32px auto; padding: 0 16px; display: grid; grid-template-columns: 320px 1fr; gap: 24px; }
+
+    .card { background: white; border-radius: 12px; padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .card h2 { font-size: 1rem; font-weight: 600; margin-bottom: 16px; color: #4f46e5; }
+
+    input, select {
+      width: 100%; padding: 8px 12px; border: 1px solid #ddd;
+      border-radius: 8px; font-size: 0.9rem; margin-bottom: 8px; outline: none;
+    }
+    input:focus, select:focus { border-color: #4f46e5; }
+
+    button {
+      padding: 8px 16px; border: none; border-radius: 8px;
+      cursor: pointer; font-size: 0.85rem; font-weight: 500;
+    }
+    .btn-primary { background: #4f46e5; color: white; width: 100%; padding: 10px; }
+    .btn-primary:hover { background: #4338ca; }
+    .btn-danger { background: #fee2e2; color: #dc2626; }
+    .btn-danger:hover { background: #fecaca; }
+    .btn-success { background: #d1fae5; color: #059669; }
+    .btn-success:hover { background: #a7f3d0; }
+
+    .list { margin-top: 16px; display: flex; flex-direction: column; gap: 8px; max-height: 400px; overflow-y: auto; }
+
+    .user-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 10px 12px; border-radius: 8px; background: #f8f9ff;
+      border: 1px solid #e8eaff; cursor: pointer; transition: background 0.15s;
+    }
+    .user-item:hover { background: #eef0ff; }
+    .user-item.active { background: #e0e7ff; border-color: #4f46e5; }
+    .user-item .name { font-weight: 500; font-size: 0.9rem; }
+    .user-item .email { font-size: 0.78rem; color: #888; }
+    .user-item .actions { display: flex; gap: 6px; }
+
+    .task-item {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      padding: 12px; border-radius: 8px; background: #fafafa;
+      border: 1px solid #eee;
+    }
+    .task-item.done { opacity: 0.6; }
+    .task-item .task-info { flex: 1; }
+    .task-item .task-title { font-weight: 500; font-size: 0.9rem; }
+    .task-item .task-title.done { text-decoration: line-through; }
+    .task-item .task-desc { font-size: 0.78rem; color: #888; margin-top: 2px; }
+    .task-item .task-actions { display: flex; gap: 6px; margin-left: 12px; }
+
+    .badge { font-size: 0.72rem; padding: 2px 8px; border-radius: 99px; font-weight: 500; }
+    .badge-done { background: #d1fae5; color: #059669; }
+    .badge-pending { background: #fef3c7; color: #d97706; }
+
+    .empty { text-align: center; color: #aaa; font-size: 0.85rem; padding: 24px 0; }
+
+    .tasks-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .tasks-header h2 { color: #4f46e5; font-size: 1rem; font-weight: 600; }
+
+    .filter-bar { display: flex; gap: 8px; margin-bottom: 12px; }
+    .filter-bar button { flex: 1; background: #f0f2f5; color: #555; }
+    .filter-bar button.active { background: #4f46e5; color: white; }
+
+    #toast {
+      position: fixed; bottom: 24px; right: 24px; background: #1e1e2e;
+      color: white; padding: 10px 20px; border-radius: 8px; font-size: 0.85rem;
+      opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999;
+    }
+    #toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>📋 Task Manager</h1>
+  <span id="stats" style="font-size:0.85rem; opacity:0.85;"></span>
+</header>
+
+<div class="container">
+  <!-- LEFT: Users -->
+  <div>
+    <div class="card">
+      <h2>👤 Users</h2>
+      <input type="text" id="newUsername" placeholder="Username" />
+      <input type="email" id="newEmail" placeholder="Email" />
+      <button class="btn-primary" onclick="createUser()">+ Add User</button>
+      <div class="list" id="userList"></div>
+    </div>
+  </div>
+
+  <!-- RIGHT: Tasks -->
+  <div>
+    <div class="card">
+      <div class="tasks-header">
+        <h2 id="tasksTitle">📝 Tasks</h2>
+      </div>
+
+      <div id="taskForm" style="margin-bottom:16px;">
+        <select id="taskUser"></select>
+        <input type="text" id="newTaskTitle" placeholder="Task title" />
+        <input type="text" id="newTaskDesc" placeholder="Description (optional)" />
+        <button class="btn-primary" onclick="createTask()">+ Add Task</button>
+      </div>
+
+      <div class="filter-bar">
+        <button class="active" onclick="setFilter('all', this)">All</button>
+        <button onclick="setFilter('pending', this)">Pending</button>
+        <button onclick="setFilter('done', this)">Done</button>
+      </div>
+
+      <div class="list" id="taskList"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+  let users = [], tasks = [], filter = 'all';
+
+  async function api(method, path, body) {
+    const res = await fetch(path, {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+      body: body ? JSON.stringify(body) : undefined
+    });
+    return res.json();
+  }
+
+  function toast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  function setFilter(f, btn) {
+    filter = f;
+    document.querySelectorAll('.filter-bar button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderTasks();
+  }
+
+  async function load() {
+    [users, tasks] = await Promise.all([api('GET', '/users'), api('GET', '/tasks')]);
+    renderUsers();
+    renderTasks();
+    renderStats();
+  }
+
+  function renderStats() {
+    const done = tasks.filter(t => t.completed).length;
+    document.getElementById('stats').textContent = `${users.length} users · ${tasks.length} tasks · ${done} completed`;
+  }
+
+  function renderUsers() {
+    const sel = document.getElementById('taskUser');
+    sel.innerHTML = users.map(u => `<option value="${u.id}">${u.username}</option>`).join('');
+
+    const list = document.getElementById('userList');
+    if (!users.length) { list.innerHTML = '<div class="empty">No users yet</div>'; return; }
+    list.innerHTML = users.map(u => `
+      <div class="user-item">
+        <div>
+          <div class="name">${u.username}</div>
+          <div class="email">${u.email}</div>
+        </div>
+        <div class="actions">
+          <button class="btn-danger" onclick="deleteUser(${u.id}, event)">✕</button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderTasks() {
+    const list = document.getElementById('taskList');
+    let filtered = tasks;
+    if (filter === 'pending') filtered = tasks.filter(t => !t.completed);
+    if (filter === 'done') filtered = tasks.filter(t => t.completed);
+
+    if (!filtered.length) { list.innerHTML = '<div class="empty">No tasks found</div>'; return; }
+
+    list.innerHTML = filtered.map(t => {
+      const user = users.find(u => u.id === t.user_id);
+      return `
+        <div class="task-item ${t.completed ? 'done' : ''}">
+          <div class="task-info">
+            <div class="task-title ${t.completed ? 'done' : ''}">${t.title}</div>
+            ${t.description ? `<div class="task-desc">${t.description}</div>` : ''}
+            <div style="margin-top:4px;">
+              <span class="badge ${t.completed ? 'badge-done' : 'badge-pending'}">${t.completed ? 'Done' : 'Pending'}</span>
+              ${user ? `<span style="font-size:0.75rem; color:#aaa; margin-left:6px;">@${user.username}</span>` : ''}
+            </div>
+          </div>
+          <div class="task-actions">
+            ${!t.completed ? `<button class="btn-success" onclick="completeTask(${t.id})">✓</button>` : ''}
+            <button class="btn-danger" onclick="deleteTask(${t.id})">✕</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  async function createUser() {
+    const username = document.getElementById('newUsername').value.trim();
+    const email = document.getElementById('newEmail').value.trim();
+    if (!username || !email) { toast('Username and email required'); return; }
+    const res = await api('POST', '/users', { username, email });
+    if (res.error) { toast(res.error); return; }
+    document.getElementById('newUsername').value = '';
+    document.getElementById('newEmail').value = '';
+    toast('User created!');
+    load();
+  }
+
+  async function deleteUser(id, e) {
+    e.stopPropagation();
+    await api('DELETE', `/users/${id}`);
+    toast('User deleted');
+    load();
+  }
+
+  async function createTask() {
+    const user_id = document.getElementById('taskUser').value;
+    const title = document.getElementById('newTaskTitle').value.trim();
+    const description = document.getElementById('newTaskDesc').value.trim();
+    if (!title) { toast('Task title required'); return; }
+    if (!user_id) { toast('Select a user first'); return; }
+    const res = await api('POST', `/users/${user_id}/tasks`, { title, description });
+    if (res.error) { toast(res.error); return; }
+    document.getElementById('newTaskTitle').value = '';
+    document.getElementById('newTaskDesc').value = '';
+    toast('Task created!');
+    load();
+  }
+
+  async function completeTask(id) {
+    await api('PUT', `/tasks/${id}`, { completed: true });
+    toast('Task marked as done!');
+    load();
+  }
+
+  async function deleteTask(id) {
+    await api('DELETE', `/tasks/${id}`);
+    toast('Task deleted');
+    load();
+  }
+
+  load();
+</script>
+</body>
+</html>

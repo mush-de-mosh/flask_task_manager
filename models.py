@@ -13,7 +13,7 @@ class User(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     # Relationship: one user has many tasks
-    tasks = db.relationship('Task', backref='author', lazy=True)
+    tasks = db.relationship('Task', backref='author', lazy=True, cascade='all, delete-orphan')
     
     def to_dict(self):
         return {
